@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MatakuliahController;
-
+use App\Http\Controllers\MahasiswaWebController; 
 // Rute Utama
 Route::get('/', function () {
     return view('welcome');
@@ -13,10 +13,6 @@ Route::get('/salam', function () {
     return 'Selamat datang di Pemrograman Web II';
 });
 
-// Langkah 2: Rute dengan Parameter Wajib
-Route::get('/mahasiswa/{nim}', function (string $nim) { 
-    return 'Data mahasiswa dengan NIM ' . $nim; 
-}); 
 
 // Langkah 2: Rute dengan Parameter Opsional
 Route::get('/matakuliah/{kode?}', function (?string $kode = null) { 
@@ -43,3 +39,10 @@ Route::get('/cari-mahasiswa', [MahasiswaController::class, 'cari']);
 // Rute Tugas Praktikum Matakuliah
 Route::get('/data-matakuliah', [MatakuliahController::class, 'index'])->name('matakuliah.index');
 Route::get('/data-matakuliah/{kode}', [MatakuliahController::class, 'show'])->name('matakuliah.show');
+
+
+Route::get('/mahasiswa-data', [MahasiswaWebController::class, 
+'index'])->name('mahasiswa.data'); 
+
+Route::get('/mahasiswa/{id}', [MahasiswaWebController::class, 'show'])
+    ->name('mahasiswa.detail');
