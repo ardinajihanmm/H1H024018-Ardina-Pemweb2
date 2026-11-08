@@ -17,6 +17,11 @@ import (
 func main() {
 	konf := config.Muat()
 
+	// Menghubungkan dan menyiapkan database.
+	config.HubungkanBasisData(konf)
+	config.Migrasi()
+	config.DataAwal()
+
 	app := fiber.New(fiber.Config{
 		AppName:      konf.NamaAplikasi,
 		ErrorHandler: penanganGalat,
@@ -29,7 +34,6 @@ func main() {
 
 	router.Daftarkan(app)
 
-	// Menangani endpoint yang tidak ditemukan (404).
 	app.Use(func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"sukses": false,
@@ -45,6 +49,7 @@ func penanganGalat(c fiber.Ctx, err error) error {
 	pesan := "Terjadi kesalahan pada server"
 
 	var galatFiber *fiber.Error
+
 	if errors.As(err, &galatFiber) {
 		kode = galatFiber.Code
 		pesan = galatFiber.Message

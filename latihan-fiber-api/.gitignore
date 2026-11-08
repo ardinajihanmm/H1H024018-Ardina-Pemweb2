@@ -1,0 +1,36 @@
+.env
+.env.*
+!.env.example
+
+# File hasil build Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/bin/
+/dist/
+/build/
+
+# Database lokal
+*.db
+*.sqlite
+*.sqlite3
+
+# Log
+*.log
+/logs/
+
+# File sistem
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# File sementara
+*.tmp
+*.bak
