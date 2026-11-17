@@ -9,6 +9,7 @@ import (
 
 	"latihan-fiber-api/internal/model"
 	"latihan-fiber-api/internal/repository"
+	"latihan-fiber-api/internal/validasi"
 )
 
 func idMahasiswa(c fiber.Ctx) (uint, error) {
@@ -131,17 +132,10 @@ func BuatMahasiswa(c fiber.Ctx) error {
 		)
 	}
 
-	if permintaan.ProgramStudiID == 0 ||
-		permintaan.Nim == "" ||
-		permintaan.Nama == "" ||
-		permintaan.Email == "" ||
-		permintaan.Angkatan <= 0 ||
-		permintaan.Ipk < 0 ||
-		permintaan.Ipk > 4 {
-		return fiber.NewError(
-			fiber.StatusBadRequest,
-			"Data mahasiswa tidak lengkap atau tidak valid",
-		)
+	if galat := validasi.Periksa(permintaan); galat != nil {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{
+			"sukses": false, "pesan": "Data yang dikirim tidak valid", "galat": galat,
+		})
 	}
 
 	aktif := true
@@ -187,39 +181,28 @@ func PerbaruiMahasiswa(c fiber.Ctx) error {
 		)
 	}
 
-	var permintaan PermintaanMahasiswa
-
+	permintaan := PermintaanMahasiswa{
+		ProgramStudiID: mahasiswa.ProgramStudiID,
+		Nim:            mahasiswa.Nim,
+		Nama:           mahasiswa.Nama,
+		Email:          mahasiswa.Email,
+		Angkatan:       mahasiswa.Angkatan,
+		Ipk:            mahasiswa.Ipk,
+	}
 	if err := c.Bind().Body(&permintaan); err != nil {
-		return fiber.NewError(
-			fiber.StatusBadRequest,
-			"Format body tidak valid",
-		)
+		return fiber.NewError(fiber.StatusBadRequest, "Format body tidak valid")
 	}
-
-	if permintaan.Nama != "" {
-		mahasiswa.Nama = permintaan.Nama
+	if galat := validasi.Periksa(permintaan); galat != nil {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{
+			"sukses": false, "pesan": "Data yang dikirim tidak valid", "galat": galat,
+		})
 	}
-
-	if permintaan.Nim != "" {
-		mahasiswa.Nim = permintaan.Nim
-	}
-
-	if permintaan.Email != "" {
-		mahasiswa.Email = permintaan.Email
-	}
-
-	if permintaan.Angkatan > 0 {
-		mahasiswa.Angkatan = permintaan.Angkatan
-	}
-
-	if permintaan.Ipk > 0 {
-		mahasiswa.Ipk = permintaan.Ipk
-	}
-
-	if permintaan.ProgramStudiID > 0 {
-		mahasiswa.ProgramStudiID = permintaan.ProgramStudiID
-	}
-
+	mahasiswa.ProgramStudiID = permintaan.ProgramStudiID
+	mahasiswa.Nim = permintaan.Nim
+	mahasiswa.Nama = permintaan.Nama
+	mahasiswa.Email = permintaan.Email
+	mahasiswa.Angkatan = permintaan.Angkatan
+	mahasiswa.Ipk = permintaan.Ipk
 	if permintaan.Aktif != nil {
 		mahasiswa.Aktif = *permintaan.Aktif
 	}
