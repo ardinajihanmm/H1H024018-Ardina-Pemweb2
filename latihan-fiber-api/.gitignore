@@ -34,3 +34,6 @@ Thumbs.db
 # File sementara
 *.tmp
 *.bak
+
+# Contoh produksi tanpa secret boleh masuk repositori
+!.env.production.example

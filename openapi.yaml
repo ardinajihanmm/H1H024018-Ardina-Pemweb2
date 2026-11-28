@@ -1,0 +1,736 @@
+openapi: 3.0.3
+info:
+  title: API Praktikum Pemrograman Web II - Laravel & Fiber
+  description: Dokumentasi kontrak gabungan berdasarkan kode proyek mahasiswa. Perhatikan perbedaan input,
+    paginasi, autentikasi, dan rute khusus backend yang ditandai x-backend. Sistem ini belum memakai kontrak
+    API tunggal.
+  version: 1.0.0
+servers:
+- url: http://127.0.0.1:8000/api
+  description: Laravel Sanctum — pengembangan lokal
+- url: http://localhost:3000/api
+  description: Fiber JWT — pengembangan lokal
+tags:
+- name: API
+  description: Endpoint praktikum
+paths:
+  /status:
+    get:
+      summary: Status API publik
+      security: []
+      responses:
+        '200':
+          description: API aktif
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+  /auth/login:
+    post:
+      summary: Login pengguna Laravel Sanctum atau Fiber JWT
+      description: Laravel menerima email+password. Fiber menerima email+kata_sandi. Keduanya mengembalikan
+        data.token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - $ref: '#/components/schemas/LoginLaravel'
+              - $ref: '#/components/schemas/LoginFiber'
+      responses:
+        '200':
+          description: Berhasil login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsLogin'
+        '401':
+          description: Email atau kata sandi salah
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+        '422':
+          description: Input tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+  /auth/profil:
+    get:
+      summary: Profil pengguna terautentikasi
+      security: &id001
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Permintaan berhasil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+        '401':
+          description: Token tidak ada atau tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+  /auth/logout:
+    post:
+      summary: Cabut token saat logout
+      security: *id001
+      responses:
+        '200':
+          description: Logout berhasil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+        '401':
+          description: Tidak login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+  /auth/register:
+    post:
+      summary: Registrasi Laravel (Modul 5)
+      x-backend: Laravel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrasiLaravel'
+      responses:
+        '201':
+          description: Pengguna dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+        '422':
+          description: Tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+  /auth/registrasi:
+    post:
+      summary: Registrasi Fiber (Modul 8)
+      x-backend: Fiber
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrasiFiber'
+      responses:
+        '201':
+          description: Pengguna dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+        '422':
+          description: Tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+  /auth/segarkan:
+    post:
+      summary: Perbarui JWT Fiber
+      x-backend: Fiber
+      security: *id001
+      responses:
+        '200':
+          description: Token diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+        '401':
+          description: Token lama ditolak
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+  /auth/logout-semua:
+    post:
+      summary: Logout semua perangkat Laravel Sanctum
+      x-backend: Laravel
+      security: *id001
+      responses:
+        '200':
+          description: Semua sesi diakhiri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+  /auth/password:
+    put:
+      summary: Ubah kata sandi pengguna Laravel
+      x-backend: Laravel
+      security: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UbahPassword'
+      responses:
+        '200':
+          description: Kata sandi diubah
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+        '422':
+          description: Kata sandi lama atau input salah
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+  /mahasiswa:
+    get:
+      summary: Daftar mahasiswa dengan pencarian dan pagination
+      description: Laravel mengembalikan data dan meta berisi current_page/last_page, Fiber berisi halaman/total_halaman.
+      security: *id001
+      parameters:
+      - name: cari
+        in: query
+        schema:
+          type: string
+        description: Cari nama atau NIM
+      - name: per_halaman
+        in: query
+        schema:
+          type: integer
+          default: 10
+      - name: angkatan
+        in: query
+        schema:
+          type: integer
+      - name: page
+        in: query
+        schema:
+          type: integer
+        description: 'Laravel: halaman aktif'
+      - name: halaman
+        in: query
+        schema:
+          type: integer
+        description: 'Fiber: halaman aktif'
+      responses:
+        '200':
+          description: Daftar berhasil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DaftarMahasiswa'
+        '401':
+          description: Belum terautentikasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+    post:
+      summary: Membuat mahasiswa (admin; pada Fiber dosen juga boleh)
+      security: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InputMahasiswa'
+      responses:
+        '201':
+          description: Mahasiswa berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+        '401':
+          description: Belum login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+        '403':
+          description: Akses ditolak
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+        '422':
+          description: Validasi gagal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+  /mahasiswa/{id}:
+    parameters:
+    - &id002
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Detail satu mahasiswa
+      security: *id001
+      responses:
+        '200':
+          description: Ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+        '404':
+          description: Tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+    put:
+      summary: Perbarui data mahasiswa
+      security: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InputMahasiswa'
+      responses:
+        '200':
+          description: Berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+        '403':
+          description: Akses ditolak
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+        '422':
+          description: Tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+    delete:
+      summary: Hapus mahasiswa (Laravel hard-delete; Fiber soft-delete)
+      security: *id001
+      responses:
+        '200':
+          description: Berhasil dihapus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+        '403':
+          description: Hanya admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+        '404':
+          description: Tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+    patch:
+      summary: Perbarui sebagian data mahasiswa - Laravel
+      x-backend: Laravel
+      security: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InputMahasiswa'
+      responses:
+        '200':
+          description: Berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+        '422':
+          description: Tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+  /mahasiswa/nim/{nim}:
+    get:
+      summary: Cari berdasarkan NIM - Fiber
+      x-backend: Fiber
+      security: *id001
+      parameters:
+      - name: nim
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Mahasiswa ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+        '404':
+          description: Tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+  /mahasiswa/{id}/pulihkan:
+    patch:
+      summary: Pulihkan mahasiswa soft deleted - Fiber
+      x-backend: Fiber
+      security: *id001
+      parameters:
+      - *id002
+      responses:
+        '200':
+          description: Berhasil dipulihkan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+        '403':
+          description: Hanya admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+  /matakuliah:
+    get:
+      summary: Daftar mata kuliah
+      description: Laravel memerlukan Bearer Sanctum; Fiber memerlukan X-Api-Key.
+      x-auth-differences: 'Laravel: Bearer token; Fiber: X-Api-Key'
+      security:
+      - bearerAuth: []
+      - apiKeyAuth: []
+      responses:
+        '200':
+          description: Daftar mata kuliah
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+    post:
+      summary: Tambah mata kuliah
+      security:
+      - bearerAuth: []
+      - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InputMataKuliah'
+      responses:
+        '201':
+          description: Data dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+  /matakuliah/{id}:
+    parameters:
+    - *id002
+    get:
+      summary: Detail mata kuliah
+      security:
+      - bearerAuth: []
+      - apiKeyAuth: []
+      responses:
+        '200':
+          description: Data ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+        '404':
+          description: Tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsGalat'
+    put:
+      summary: Ubah mata kuliah
+      security:
+      - bearerAuth: []
+      - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InputMataKuliah'
+      responses:
+        '200':
+          description: Data diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+    delete:
+      summary: Hapus mata kuliah
+      security:
+      - bearerAuth: []
+      - apiKeyAuth: []
+      responses:
+        '200':
+          description: Data dihapus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+    patch:
+      summary: Perbarui mata kuliah parsial - Laravel
+      x-backend: Laravel
+      security: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InputMataKuliah'
+      responses:
+        '200':
+          description: Diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+  /program-studi:
+    get:
+      summary: Daftar program studi - Fiber
+      x-backend: Fiber
+      security:
+      - apiKeyAuth: []
+      responses:
+        '200':
+          description: Daftar program studi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+  /program-studi/{id}/mahasiswa:
+    get:
+      summary: Mahasiswa per program studi - Laravel
+      x-backend: Laravel
+      security: *id001
+      parameters:
+      - *id002
+      responses:
+        '200':
+          description: Daftar per prodi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsUmum'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Sanctum personal access token untuk Laravel, JWT untuk Fiber
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+      description: Khusus mata kuliah/program studi pada Fiber
+  schemas:
+    InputMahasiswa:
+      type: object
+      required:
+      - program_studi_id
+      - nim
+      - nama
+      - email
+      - angkatan
+      properties:
+        program_studi_id: &id003
+          type: integer
+          minimum: 1
+          example: 1
+        nim: &id004
+          type: string
+          maxLength: 20
+          example: H125010
+        nama: &id005
+          type: string
+          maxLength: 100
+          example: Gita Permata
+        email: &id006
+          type: string
+          format: email
+          example: gita@example.com
+        angkatan: &id007
+          type: integer
+          minimum: 2000
+          maximum: 2100
+          example: 2025
+        ipk: &id008
+          type: number
+          minimum: 0
+          maximum: 4
+          example: 3.7
+        aktif: &id009
+          type: boolean
+          example: true
+      description: Pola NIM H diikuti angka wajib pada Fiber; aturan Laravel saat ini tidak menambahkan pola
+        itu.
+    InputMataKuliah:
+      type: object
+      properties:
+        kode:
+          type: string
+        nama:
+          type: string
+        sks:
+          type: integer
+        semester:
+          type: integer
+    LoginLaravel:
+      type: object
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    LoginFiber:
+      type: object
+      required:
+      - email
+      - kata_sandi
+      properties:
+        email:
+          type: string
+          format: email
+        kata_sandi:
+          type: string
+          format: password
+    RegistrasiLaravel:
+      allOf:
+      - $ref: '#/components/schemas/LoginLaravel'
+      - type: object
+        properties:
+          name:
+            type: string
+          password_confirmation:
+            type: string
+    RegistrasiFiber:
+      type: object
+      required:
+      - nama
+      - email
+      - kata_sandi
+      properties:
+        nama:
+          type: string
+        email:
+          type: string
+          format: email
+        kata_sandi:
+          type: string
+    UbahPassword:
+      type: object
+      required:
+      - password_lama
+      - password_baru
+      - password_baru_confirmation
+      properties:
+        password_lama:
+          type: string
+          format: password
+        password_baru:
+          type: string
+          format: password
+        password_baru_confirmation:
+          type: string
+          format: password
+    ResponsLogin:
+      type: object
+      properties:
+        sukses:
+          type: boolean
+        pesan:
+          type: string
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              description: Sensitif; jangan dicetak pada log atau screenshot publik
+            pengguna:
+              type: object
+            tipe:
+              type: string
+    ResponsUmum:
+      type: object
+      properties:
+        sukses:
+          type: boolean
+        pesan:
+          type: string
+        data:
+          description: Bentuk data sesuai endpoint
+    ResponsGalat:
+      type: object
+      properties:
+        sukses:
+          type: boolean
+          example: false
+        pesan:
+          type: string
+        galat:
+          description: Laravel object field => pesan; Fiber array {field,pesan}
+    DaftarMahasiswa:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Mahasiswa'
+        meta:
+          type: object
+          properties:
+            current_page:
+              type: integer
+            last_page:
+              type: integer
+            halaman:
+              type: integer
+            total_halaman:
+              type: integer
+            total:
+              type: integer
+    Mahasiswa:
+      type: object
+      properties:
+        id:
+          type: integer
+        program_studi_id: *id003
+        nim: *id004
+        nama: *id005
+        email: *id006
+        angkatan: *id007
+        ipk: *id008
+        aktif: *id009
